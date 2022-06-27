@@ -1,24 +1,43 @@
 package main
 
 import (
-	"os"
+	"database/sql"
+	"fmt"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
-var r *gin.Engine
-
-// var db *sql.DB
-
 func main() {
-	godotenv.Load()
-	port := os.Getenv("PORT")
 	r := gin.Default()
-	r.GET("/ping", func(ctx *gin.Context) {
-		ctx.JSON(200, gin.H{
-			"message": "pong",
-		})
+
+	db, err := sql.Open("postgres", "postgresql://username:password@localhost:5432/database")
+	if err != nil {
+		fmt.Println("Error while connecting the to database!!")
+	}
+
+	store, err := postgres.NewStore(db, []byte("secret"))
+	if err != nil {
+		fmt.Println("Error while creating store!!")
+	}
+
+	r.Use(sessions.Sessions("mySession", store))
+
+	r.GET("/incr", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		var count int
+		v := session.Get("count")
+		if v == nil {
+			count = 0
+		} else {
+			count = v.(int)
+			count++
+		}
+		session.Set("count", count)
+		session.Save()
+		ctx.JSON(200, gin.H{"count": count})
+
+		r.Run(":8080")
 	})
-	r.Run("localhost:" + port) // Listen and Server at 8080/ping
 }
