@@ -3,41 +3,46 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/postgres"
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq"
 )
 
+var r *gin.Engine
+var db *sql.DB
+
 func main() {
-	r := gin.Default()
+	url := "postgres://auqvywneajawrw:dadf8a14f2f6489f8c9289784041d4548812299b2afcab7f14a591aa78fe4180@ec2-34-239-241-121.compute-1.amazonaws.com:5432/d1lum6mbittgat"
 
-	db, err := sql.Open("postgres", "postgresql://username:password@localhost:5432/database")
+	// if !ok {
+	// 	log.Fatalln("Database url is required.")
+	// }
+
+	var err error
+	db, err = connDB(url)
+
 	if err != nil {
-		fmt.Println("Error while connecting the to database!!")
+		log.Fatalf("Error connecting database: %s", err.Error())
 	}
 
-	store, err := postgres.NewStore(db, []byte("secret"))
+	// port := os.Getenv("PORT")
+
+	msglist, err := getAllMsgsFromDB(db)
+
 	if err != nil {
-		fmt.Println("Error while creating store!!")
+		fmt.Println("No messages in DB")
 	}
 
-	r.Use(sessions.Sessions("mySession", store))
+	globalMsgList = append(globalMsgList, msglist...)
 
-	r.GET("/incr", func(ctx *gin.Context) {
-		session := sessions.Default(ctx)
-		var count int
-		v := session.Get("count")
-		if v == nil {
-			count = 0
-		} else {
-			count = v.(int)
-			count++
-		}
-		session.Set("count", count)
-		session.Save()
-		ctx.JSON(200, gin.H{"count": count})
+	r = gin.Default()
+	r.LoadHTMLGlob("../frontend/template/*")
 
-		r.Run(":8080")
-	})
+	r.Use(sessions.Sessions("chatsession", sessions.NewCookieStore([]byte("secret"))))
+
+	intializeRoutes()
+
+	r.Run()
 }
