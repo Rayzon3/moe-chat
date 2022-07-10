@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
 	"github.com/gin-gonic/contrib/sessions"
@@ -16,12 +15,8 @@ var db *sql.DB
 func main() {
 	url := "postgres://auqvywneajawrw:dadf8a14f2f6489f8c9289784041d4548812299b2afcab7f14a591aa78fe4180@ec2-34-239-241-121.compute-1.amazonaws.com:5432/d1lum6mbittgat"
 
-	// if !ok {
-	// 	log.Fatalln("Database url is required.")
-	// }
-
 	var err error
-	db, err = connDB(url)
+	db, err = connectDB(url)
 
 	if err != nil {
 		log.Fatalf("Error connecting database: %s", err.Error())
@@ -29,16 +24,16 @@ func main() {
 
 	// port := os.Getenv("PORT")
 
-	msglist, err := getAllMsgsFromDB(db)
+	msglist, err := getAllMsgsDB(db)
 
 	if err != nil {
-		fmt.Println("No messages in DB")
+		log.Fatalln("Unable to retrieve messages from database.")
 	}
 
-	globalMsgList = append(globalMsgList, msglist...)
+	globalmsgList = append(globalmsgList, msglist...)
 
 	r = gin.Default()
-	r.LoadHTMLGlob("../frontend/template/*")
+	r.LoadHTMLGlob("static/template/*")
 
 	r.Use(sessions.Sessions("chatsession", sessions.NewCookieStore([]byte("secret"))))
 

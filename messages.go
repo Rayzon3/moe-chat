@@ -7,24 +7,24 @@ import (
 )
 
 type message struct {
-	User  string `json: "user"`
-	Msg   string `json: "msg"`
-	Color string `json: "color"`
-	Time  string `json: "time"`
+	User  string `json:"user"`
+	Msg   string `json:"msg"`
+	Color string `json:"color"`
+	Time  string `json:"time"`
 }
 
-var globalMsgList = []message{{"Mod", "Welcome to Moe Chat UwU", "red", "[00:00:00]"}}
+var globalmsgList = []message{{"Mod", "Welcome to the global chat.", "red", "[00:00:00] "}}
 
 func getAllMsgs() []message {
-	return globalMsgList
+	return globalmsgList
 }
 
 func addMsg(data message) {
-	globalMsgList = append(globalMsgList, data)
+	globalmsgList = append(globalmsgList, data)
 }
 
-func connDB(url string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", url)
+func connectDB(dbURL string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", dbURL)
 
 	if err != nil {
 		return nil, err
@@ -37,14 +37,14 @@ func connDB(url string) (*sql.DB, error) {
 	}
 
 	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS messeges (
-			username VARCHAR(64),
-			msg VARCHAR(100),
-			color VARCHAR(10),
-			time VARCHAR(10),
-			CHECK (CHAR_LENGTH(TRIM(user)) > 0)
-		);
-	`)
+    CREATE TABLE IF NOT EXISTS messages (
+      username VARCHAR(64),
+	  msg VARCHAR(100),
+	  color VARCHAR(10),
+	  time VARCHAR(10),
+      CHECK (CHAR_LENGTH(TRIM(user)) > 0)
+    );
+  `)
 
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func addMsgtoDB(db *sql.DB, user string, msg string, color string, time string) 
 	created := message{}
 
 	row := db.QueryRow(
-		`INSERT INTO messages (username, msg, color, time) VALUES ($1, $2, $3, $4) RETURNING username, msg, color, time`,
+		`INSERT INTO messages (username,msg,color,time) VALUES ($1,$2,$3,$4) RETURNING username, msg, color, time`,
 		user, msg, color, time,
 	)
 
@@ -70,8 +70,11 @@ func addMsgtoDB(db *sql.DB, user string, msg string, color string, time string) 
 	return &created, nil
 }
 
-func getAllMsgsFromDB(db *sql.DB) ([]message, error) {
-	rows, err := db.Query(`SELECT * FROM messages`)
+func getAllMsgsDB(db *sql.DB) ([]message, error) {
+
+	rows, err := db.Query(
+		`SELECT * FROM messages`,
+	)
 
 	if err != nil {
 		return nil, err
